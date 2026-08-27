@@ -15,10 +15,12 @@ builder.Services
         options.Stateless = true;
     })
     .WithTools<RandomNumberTools>()
-    .WithTools<JugadorTools>();
+    .WithTools<JugadorTools>()
+    .WithTools<CampeonatoTools>()
+    .WithTools<EquipoTools>();
 
 // Configurar la cadena de conexión y EF Core
-builder.Services.AddDbContext<PeloterosDbContext>(opt => 
+builder.Services.AddDbContext<PeloterosDbContext>(opt =>
                                 opt.UseSqlServer(builder.Configuration.GetConnectionString("Peloteros"))
                             );
 

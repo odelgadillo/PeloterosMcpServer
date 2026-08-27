@@ -110,5 +110,33 @@ namespace PeloterosMcpServer.Tools
             return await query.CountAsync();
         }
 
+        [McpServerTool, Description(
+        "Lista los jugadores que aún están en estado 'Registrado' (N), pendientes de que un " +
+        "administrador verifique sus datos. Usar para preguntas sobre la cola de verificación pendiente.")]
+        public static async Task<List<JugadorResumenDto>> ListarJugadoresPendientesVerificacion(
+        PeloterosDbContext db,
+        [Description("Cantidad máxima de resultados.")] int limite = 50)
+        {
+            limite = Math.Clamp(limite, 1, 200);
+
+            return await db.Jugadors
+                .AsNoTracking()
+                .Include(j => j.Posicion)
+                .Include(j => j.Equipo)
+                .Where(j => j.JugadorEstadoId == "N")
+                .OrderBy(j => j.ApellidoPaterno)
+                .Take(limite)
+                .Select(j => new JugadorResumenDto
+                {
+                    JugadorId = j.JugadorId,
+                    NombreCompleto = $"{j.Nombre} {j.ApellidoPaterno} {j.ApellidoMaterno}",
+                    Apodo = j.Apodo,
+                    NroCamiseta = j.NroCamiseta,
+                    Posicion = j.Posicion != null ? j.Posicion.Nombre : null,
+                    Equipo = j.Equipo != null ? j.Equipo.Nombre : null,
+                    Estado = "Registrado"
+                })
+                .ToListAsync();
+        }
     }
 }
