@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PeloterosMcpServer.Data/PeloterosMcpServer.Data.csproj" />
+  <Project Path="PeloterosMcpServer/PeloterosMcpServer.csproj" />
+</Solution>
