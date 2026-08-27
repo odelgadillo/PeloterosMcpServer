@@ -17,7 +17,8 @@ builder.Services
     .WithTools<RandomNumberTools>()
     .WithTools<JugadorTools>()
     .WithTools<CampeonatoTools>()
-    .WithTools<EquipoTools>();
+    .WithTools<EquipoTools>()
+    .WithTools<PartidoTools>();
 
 // Configurar la cadena de conexión y EF Core
 builder.Services.AddDbContext<PeloterosDbContext>(opt =>
