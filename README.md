@@ -29,3 +29,14 @@ El proyecto está compuesto por los siguientes componentes clave:
 ### Prerrequisitos
 * [.NET SDK](https://dotnet.microsoft.com/) (versión 10.0.400)
 * Un cliente compatible con MCP (por ejemplo, Claude Desktop)
+
+
+### 🔐 Cadena de Conexión (User Secrets)
+Para configurar la cadena de conexión en entorno de desarrollo local, usa la herramienta **User Secrets** de .NET:
+```JSON
+{
+  "ConnectionStrings": {
+    "Peloteros": "Server=[NombreServidor];Database=[NombreBaseDatos];Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
