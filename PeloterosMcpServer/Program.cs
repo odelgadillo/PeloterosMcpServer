@@ -19,7 +19,8 @@ builder.Services
     .WithTools<CampeonatoTools>()
     .WithTools<EquipoTools>()
     .WithTools<PartidoTools>()
-    .WithTools<TransferenciaTools>();
+    .WithTools<TransferenciaTools>()
+    .WithTools<ReunionTools>();
 
 // Configurar la cadena de conexión y EF Core
 builder.Services.AddDbContext<PeloterosDbContext>(opt =>
