@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Elementos de la solución/">
+    <File Path=".mcp.json" />
     <File Path="README.md" />
   </Folder>
   <Project Path="PeloterosMcpServer.Data/PeloterosMcpServer.Data.csproj" />

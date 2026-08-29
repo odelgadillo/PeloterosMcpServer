@@ -9,10 +9,11 @@ namespace PeloterosMcpServer.Tools
     [McpServerToolType]
     public class PartidoTools
     {
-        [McpServerTool, Description(
-        "Lista partidos filtrando por campeonato, equipo, rango de fechas y/o estado " +
-        "(P=Programado, C=Confirmado, D=Definido/finalizado, X=Anulado). " +
-        "Usar para preguntas de agenda, calendario o qué partidos se jugaron/jugarán.")]
+        [McpServerTool, Description("""
+            Lista partidos filtrando por campeonato, equipo, rango de fechas y/o estado (P=Programado, C=Confirmado, D=Definido/finalizado, X=Anulado).
+            Usar para preguntas de agenda, calendario o qué partidos se jugaron/jugarán.
+            NO usar para contar partidos — usar contar_partidos en su lugar, que es más preciso y no tiene límite de resultados.
+            """)]
         public static async Task<List<PartidoResumenDto>> ListarPartidos(
         PeloterosDbContext db,
         [Description("ID del campeonato. Opcional.")] int? campeonatoId = null,
@@ -162,5 +163,92 @@ namespace PeloterosMcpServer.Tools
                 })
                 .ToListAsync();
         }
+
+
+        [McpServerTool, Description(
+            """
+            Cuenta partidos de un campeonato según filtros: definidos (jugados), programados, o con walkover.
+            Usar SIEMPRE que la pregunta sea sobre CANTIDAD o TOTAL de partidos. (ej. 'cuántos partidos se jugaron', 'cuántos walkover hubo'), en vez de listar_partidos.
+            """)]
+        public static async Task<int> ContarPartidos(
+        PeloterosDbContext db,
+        [Description("ID del campeonato a consultar.")] int campeonatoId,
+        [Description("Código de estado a filtrar: P, C, D o X. Opcional, si no se indica cuenta todos.")] string? estado = null,
+        [Description("Si es true, cuenta solo partidos con walkover.")] bool soloWalkover = false)
+        {
+            var query = db.Partidos
+                .AsNoTracking()
+                .Where(p => p.CampeonatoId == campeonatoId)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(p => p.PartidoEstadoId == estado);
+
+            if (soloWalkover)
+                query = query.Where(p => p.Walkower == true);
+
+            return await query.CountAsync();
+        }
+
+
+        [McpServerTool, Description(
+        "Suma el total de goles marcados en un campeonato, sumando el resultado final de cada " +
+        "partido (no depende de que se haya cargado el detalle de goleadores por jugador). " +
+        "Usar para preguntas sobre cantidad total de goles del torneo.")]
+        public static async Task<int> TotalGolesCampeonato(
+        PeloterosDbContext db,
+        [Description("ID del campeonato a consultar.")] int campeonatoId)
+        {
+            var partidos = await db.Partidos
+                .AsNoTracking()
+                .Where(p => p.CampeonatoId == campeonatoId && p.PartidoEstadoId == "D")
+                .Select(p => new { p.GolesEquipoA, p.GolesEquipoB })
+                .ToListAsync();
+
+            return partidos.Sum(p => (p.GolesEquipoA ?? 0) + (p.GolesEquipoB ?? 0));
+        }
+
+        [McpServerTool, Description(
+        "Devuelve el ranking de equipos por cantidad de tarjetas amarillas y rojas recibidas en " +
+        "un campeonato, ordenado de mayor a menor. Usar para preguntas sobre disciplina o fair play.")]
+        public static async Task<List<RankingTarjetasDto>> RankingTarjetasPorEquipo(
+        PeloterosDbContext db,
+        [Description("ID del campeonato a consultar.")] int campeonatoId)
+        {
+            var partidos = await db.Partidos
+                .AsNoTracking()
+                .Include(p => p.EquipoIdANavigation)
+                .Include(p => p.EquipoIdBNavigation)
+                .Where(p => p.CampeonatoId == campeonatoId && p.PartidoEstadoId == "D")
+                .ToListAsync();
+
+            var acumulado = new Dictionary<int, RankingTarjetasDto>();
+
+            void Acumular(int? equipoId, string? nombre, int? amarillas, int? rojas)
+            {
+                if (equipoId is null) return;
+
+                if (!acumulado.TryGetValue(equipoId.Value, out var dto))
+                {
+                    dto = new RankingTarjetasDto { EquipoId = equipoId.Value, Equipo = nombre ?? "" };
+                    acumulado[equipoId.Value] = dto;
+                }
+
+                dto.TotalAmarillas += amarillas ?? 0;
+                dto.TotalRojas += rojas ?? 0;
+            }
+
+            foreach (var p in partidos)
+            {
+                Acumular(p.EquipoIdA, p.EquipoIdANavigation?.Nombre, p.TamarillaEquipoA, p.TrojaEquipoA);
+                Acumular(p.EquipoIdB, p.EquipoIdBNavigation?.Nombre, p.TamarillaEquipoB, p.TrojaEquipoB);
+            }
+
+            return acumulado.Values
+                .OrderByDescending(d => d.TotalRojas)
+                .ThenByDescending(d => d.TotalAmarillas)
+                .ToList();
+        }
+
     }
 }
