@@ -9,11 +9,7 @@ namespace PeloterosMcpServer.Tools
     [McpServerToolType]
     public class PartidoTools
     {
-        [McpServerTool, Description("""
-            Lista partidos filtrando por campeonato, equipo, rango de fechas y/o estado (P=Programado, C=Confirmado, D=Definido/finalizado, X=Anulado).
-            Usar para preguntas de agenda, calendario o qué partidos se jugaron/jugarán.
-            NO usar para contar partidos — usar contar_partidos en su lugar, que es más preciso y no tiene límite de resultados.
-            """)]
+        [McpServerTool, Description("""Lista partidos filtrando por campeonato, equipo, rango de fechas y/o estado (P=Programado, C=Confirmado, D=Definido/finalizado, X=Anulado). Usar para preguntas de agenda, calendario o qué partidos se jugaron/jugarán. NO usar para contar partidos — usar contar_partidos en su lugar, que es más preciso y no tiene límite de resultados.""")]
         public static async Task<List<PartidoResumenDto>> ListarPartidos(
         PeloterosDbContext db,
         [Description("ID del campeonato. Opcional.")] int? campeonatoId = null,
@@ -21,6 +17,7 @@ namespace PeloterosMcpServer.Tools
         [Description("Fecha desde (inclusive). Opcional.")] DateTime? fechaDesde = null,
         [Description("Fecha hasta (inclusive). Opcional.")] DateTime? fechaHasta = null,
         [Description("Código de estado: P, C, D o X. Opcional.")] string? estado = null,
+        [Description("ID de la fase a filtrar (obtenerlo con listar_fases). Opcional.")] int? faseId = null,
         [Description("Cantidad máxima de resultados.")] int limite = 30)
         {
             limite = Math.Clamp(limite, 1, 100);
@@ -47,6 +44,9 @@ namespace PeloterosMcpServer.Tools
 
             if (!string.IsNullOrWhiteSpace(estado))
                 query = query.Where(p => p.PartidoEstadoId == estado);
+
+            if (faseId.HasValue)
+                query = query.Where(p => p.FaseId == faseId);
 
             return await query
                 .OrderBy(p => p.FechaHora)
@@ -248,6 +248,80 @@ namespace PeloterosMcpServer.Tools
                 .OrderByDescending(d => d.TotalRojas)
                 .ThenByDescending(d => d.TotalAmarillas)
                 .ToList();
+        }
+
+
+
+        [McpServerTool, Description("""Devuelve el podio completo de un campeonato: campeón, subcampeón, tercer y cuarto lugar, basado en los resultados de los partidos de Final y Tercer Lugar. Usar para preguntas sobre finalistas, podio, o posiciones finales del torneo.""")]
+        public static async Task<PodioDto> ObtenerPodio(
+            PeloterosDbContext db,
+            [Description("ID del campeonato a consultar.")] int campeonatoId)
+        {
+            const int FASE_FINAL_ID = 6;
+            const int FASE_TERCER_LUGAR_ID = 7;
+            const string ESTADO_PARTIDO_DEFINIDO = "D";
+
+            var partidoFinal = await db.Partidos
+                    .AsNoTracking()
+                    .Include(p => p.Fase)
+                    .Include(p => p.EquipoIdANavigation)
+                    .Include(p => p.EquipoIdBNavigation)
+                    .Include(p => p.EquipoIdGanadorNavigation)
+                    .Where(p => p.CampeonatoId == campeonatoId
+                             && p.PartidoEstadoId == ESTADO_PARTIDO_DEFINIDO
+                             && p.FaseId == FASE_FINAL_ID)
+                    .FirstOrDefaultAsync();
+
+            var partidoTercerLugar = await db.Partidos
+                .AsNoTracking()
+                .Include(p => p.Fase)
+                .Include(p => p.EquipoIdANavigation)
+                .Include(p => p.EquipoIdBNavigation)
+                .Include(p => p.EquipoIdGanadorNavigation)
+                .Where(p => p.CampeonatoId == campeonatoId
+                         && p.PartidoEstadoId == ESTADO_PARTIDO_DEFINIDO
+                         && p.FaseId == FASE_TERCER_LUGAR_ID)
+                .FirstOrDefaultAsync();
+
+            string? subCampeonFinal = null;
+            if (partidoFinal != null)
+            {
+                subCampeonFinal = partidoFinal.EquipoIdGanador == partidoFinal.EquipoIdA
+                    ? partidoFinal.EquipoIdBNavigation?.Nombre
+                    : partidoFinal.EquipoIdANavigation?.Nombre;
+            }
+
+            string? cuartoLugar = null;
+            if (partidoTercerLugar != null)
+            {
+                cuartoLugar = partidoTercerLugar.EquipoIdGanador == partidoTercerLugar.EquipoIdA
+                    ? partidoTercerLugar.EquipoIdBNavigation?.Nombre
+                    : partidoTercerLugar.EquipoIdANavigation?.Nombre;
+            }
+
+            return new PodioDto
+            {
+                Campeon = partidoFinal?.EquipoIdGanadorNavigation?.Nombre,
+                SubCampeon = subCampeonFinal,
+                TercerLugar = partidoTercerLugar?.EquipoIdGanadorNavigation?.Nombre,
+                CuartoLugar = cuartoLugar
+            };
+        }
+
+
+        [McpServerTool, Description("""Lista las fases de un campeonato (ej. Clasificación, Cuartos, Semifinal, Final), ordenadas según su secuencia real. Usar para ubicar el FaseId antes de filtrar partidos por fase.""")]
+        public static async Task<List<FaseDto>> ListarFases(PeloterosDbContext db)
+        {
+            return await db.Fases
+                .AsNoTracking()
+                .OrderBy(f => f.Orden)
+                .Select(f => new FaseDto
+                {
+                    FaseId = f.FaseId,
+                    Nombre = f.Nombre,
+                    Orden = f.Orden
+                })
+                .ToListAsync();
         }
 
     }
