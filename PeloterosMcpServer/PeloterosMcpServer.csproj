@@ -2,18 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RuntimeIdentifiers>win-x64;win-arm64;osx-arm64;linux-x64;linux-arm64;linux-musl-x64</RuntimeIdentifiers>
+    <!--<RuntimeIdentifiers>win-x64;win-arm64;osx-arm64;linux-x64;linux-arm64;linux-musl-x64</RuntimeIdentifiers>-->
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>699c8cd3-ac3f-4229-8644-4b93e7373469</UserSecretsId>
 
 
     <!-- Set up the MCP server to be a self-contained application that does not rely on a shared framework -->
-    <SelfContained>true</SelfContained>
-    <PublishSelfContained>true</PublishSelfContained>
+    <!--<SelfContained>true</SelfContained>-->
+    <!--<PublishSelfContained>true</PublishSelfContained>-->
 
     <!-- Set up the MCP server to be a single file executable -->
-    <PublishSingleFile>true</PublishSingleFile>
+    <!--<PublishSingleFile>true</PublishSingleFile>-->
   </PropertyGroup>
 
   <ItemGroup>
