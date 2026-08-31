@@ -4,6 +4,8 @@ using PeloterosMcpServer.Tools;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();  // OHD: Registra los controladores en la inyección de dependencias
+
 // Add the MCP services: the transport to use (http) and the tools to register.
 builder.Services
     .AddMcpServer()
@@ -30,5 +32,6 @@ builder.Services.AddDbContext<PeloterosDbContext>(opt =>
 var app = builder.Build();
 app.MapMcp();
 //app.UseHttpsRedirection();
+app.MapControllers();   // OHD: Habilita el ruteo hacia Controllers como /api/test
 
 app.Run();
