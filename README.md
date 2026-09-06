@@ -31,12 +31,16 @@ El proyecto está compuesto por los siguientes componentes clave:
 * Un cliente compatible con MCP (por ejemplo, Claude Desktop)
 
 
-### 🔐 Cadena de Conexión (User Secrets)
-Para configurar la cadena de conexión en entorno de desarrollo local, usa la herramienta **User Secrets** de .NET:
+### 🔐 Cadena de Conexión y Configuración de JWT (User Secrets)
+Para configurar la cadena de conexión en entorno de desarrollo local y la configuración de JWT, usa la herramienta **User Secrets** de .NET:
 ```JSON
 {
   "ConnectionStrings": {
     "Peloteros": "Server=[NombreServidor];Database=[NombreBaseDatos];Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Jwt": {
+    "Key": "ClaveLarga",
+    "Issuer": "PeloterosWeb"
   }
 }
 ```
