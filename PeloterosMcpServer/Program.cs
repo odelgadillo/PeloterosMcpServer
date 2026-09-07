@@ -47,16 +47,44 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse(); // frena el comportamiento default, lo hacemos nosotros
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                var metadataUrl = $"{context.Request.Scheme}://{context.Request.Host}/.well-known/oauth-protected-resource";
+                context.Response.Headers.Append(
+                    "WWW-Authenticate",
+                    $"Bearer resource_metadata=\"{metadataUrl}\"");
+
+                await context.Response.WriteAsync("");
+            }
+        };
     });
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.MapGet("/.well-known/oauth-protected-resource", (HttpContext ctx) =>
+{
+    var audience = app.Configuration["Jwt:Audience"];
+    var issuer = app.Configuration["Jwt:Issuer"];
+
+    return Results.Json(new
+    {
+        resource = audience,
+        authorization_servers = new[] { issuer }
+    });
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapMcp()
-    .RequireAuthorization(); ;
+    .RequireAuthorization();
 //app.UseHttpsRedirection();
 app.MapControllers();   // OHD: Habilita el ruteo hacia Controllers como /api/test
 
