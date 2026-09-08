@@ -52,10 +52,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnChallenge = async context =>
             {
-                context.HandleResponse(); // frena el comportamiento default, lo hacemos nosotros
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.HandleResponse();                                               // 1. Frena la respuesta por defecto de .NET
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;        // 2. Responde 401
 
+                // 3. Construimos una dirección a la que se debe ir a preguntar 'quién es el Servidor de Autorización'
                 var metadataUrl = $"{context.Request.Scheme}://{context.Request.Host}/.well-known/oauth-protected-resource";
+
+                // 4. Le enviamos la direccion (en la que debe consultar) en la cabecera WWW-Authenticate
                 context.Response.Headers.Append(
                     "WWW-Authenticate",
                     $"Bearer resource_metadata=\"{metadataUrl}\"");
