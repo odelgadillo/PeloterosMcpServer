@@ -18,7 +18,6 @@ builder.Services.AddMcpServer()
         // See https://csharp.sdk.modelcontextprotocol.io/concepts/transports/transports.html for details.
         options.Stateless = true;
     })
-    .WithTools<RandomNumberTools>()
     .WithTools<JugadorTools>()
     .WithTools<CampeonatoTools>()
     .WithTools<EquipoTools>()
