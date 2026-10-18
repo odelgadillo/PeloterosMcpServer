@@ -18,7 +18,6 @@ builder.Services.AddMcpServer()
         // See https://csharp.sdk.modelcontextprotocol.io/concepts/transports/transports.html for details.
         options.Stateless = true;
     })
-    .WithTools<RandomNumberTools>()
     .WithTools<JugadorTools>()
     .WithTools<CampeonatoTools>()
     .WithTools<EquipoTools>()
@@ -50,8 +49,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Events = new JwtBearerEvents
         {
+            // Deja en el log por qué se rechazó un token (vencido, otra audiencia, otra firma...).
+            OnAuthenticationFailed = context =>
+            {
+                context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>()
+                    .LogWarning("Token rechazado: {Motivo}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
             OnChallenge = async context =>
             {
+                if (!context.Request.Headers.ContainsKey("Authorization"))
+                    context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>()
+                        .LogInformation("Pedido sin token a {Ruta}", context.Request.Path);
                 context.HandleResponse();                                               // 1. Frena la respuesta por defecto de .NET
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;        // 2. Responde 401
 

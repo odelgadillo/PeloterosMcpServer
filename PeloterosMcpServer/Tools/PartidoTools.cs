@@ -325,17 +325,5 @@ namespace PeloterosMcpServer.Tools
                 })
                 .ToListAsync();
         }
-
-
-        [McpServerTool, Description("""Marca un partido como jugado (ejercicio de prueba, no persiste en base). Requiere rol Administrator o Manager.""")]
-        public static Task<string> MarcarPartidoComoJugado(
-            IHttpContextAccessor httpContextAccessor,
-            [Description("ID del partido a marcar (simulado).")] int partidoId)
-        {
-            var user = httpContextAccessor.RequireRole("Administrator", "Manager");
-
-            return Task.FromResult(
-                $"[Simulado] Partido {partidoId} marcado como jugado por {user.Identity!.Name}.");
-        }
     }
 }
