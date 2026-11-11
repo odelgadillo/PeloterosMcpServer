@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Configuración de producción con secretos: se crea a mano solo en la PC que publica
+appsettings.Production.json
